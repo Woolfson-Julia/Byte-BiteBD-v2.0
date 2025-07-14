@@ -1,0 +1,115 @@
+tags:
+  - Recipes
+summary: Get all recipes added by the user with pagination, sorting, and filtering
+operationId: getMyRecipes
+description: |
+  Retrieve all recipes added by the authenticated user with support for pagination, sorting, and filtering.
+  The response includes pagination info:
+    "page": 1,
+    "perPage": 12,
+    "totalItems": 4,
+    "totalPages": 1,
+    "hasPreviousPage": false,
+    "hasNextPage": false
+
+  Sorting is supported on the following fields:
+  _id, name, cals, time, category, createdAt, updatedAt
+
+  Filtering can be done by:
+  - name (partial or full match)
+  - category
+  - isFavorite (whether the recipe is marked as favorite by the user)
+
+security:
+- bearerAuth: []
+parameters:
+- in: query
+  name: sortBy
+  schema:
+    type: string
+    enum:
+      - _id
+      - title
+      - cals
+      - time
+      - category
+      - createdAt
+      - updatedAt
+    default: createdAt
+  description: Field to sort by
+- in: query
+  name: sortOrder
+  schema:
+    type: string
+    enum: [asc, desc]
+    default: desc
+  description: Sort order:ascending or descending
+- in: query
+  name: page
+  schema:
+    type: integer
+    example: 1
+    minimum: 1
+  description: Page number for pagination
+- in: query
+  name: perPage
+  schema:
+    type: integer
+    example: 10
+    minimum: 1
+    maximum: 100
+  description: Number of items per page
+- in: query
+  name: category
+  schema:
+    type: string
+    example: dessert
+  description: Filter by category
+- in: query
+  name: ingredient
+  schema:
+    type: string
+    example: chocolate
+  description: Filter by ingredient
+- in: query
+  name: title
+  schema:
+    type: string
+    example: Japanese gohan rice
+  description: Filter by recipe name
+
+
+responses:
+  '200':
+    description: 'Recipe found successfully'
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - status
+            - message
+            - data
+            - isFavorite
+          properties:
+            status:
+              type: integer
+              example: 200
+            message:
+              type: string
+              example: 'Recipe found successfully'
+            data:
+              $ref: '../../../../components/schemas/recipe.yaml'
+            isFavorite:
+              type: boolean
+              example: true
+
+
+
+
+
+  '401':
+    $ref: '../../../../components/responses/401.yaml'
+
+  '500':
+    $ref: '../../../../components/responses/500.yaml'
