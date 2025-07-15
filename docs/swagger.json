@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "version": "1.0.0",
-    "title": "Byte&Bite app",
+    "title": "Byte&Bite-v2.0 app",
     "license": {
       "name": "Apache 2.0",
       "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -11,7 +11,7 @@
   },
   "servers": [
     {
-      "url": "https://byte-bitebd.onrender.com/api",
+      "url": "https://byte-bite-v2-0.onrender.com/api",
       "description": "Production server"
     },
     {
