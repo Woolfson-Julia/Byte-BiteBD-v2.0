@@ -44,55 +44,100 @@ if (!recipes || recipes.length === 0) {
 
   const enrichedRecipes = await getEnrichedRecipes(recipes);
 
-    if (req.user) {
-      // const favoritesChecks = enrichedRecipes.map(async (recipe) => {
-      //   const isFavorite = await isRecipeFavorite(req.user._id, recipe._id);
-      //   return { ...recipe, isFavorite };
-      // });
-    const favoritesChecks = enrichedRecipes.map(async (recipe) => {
-      const isFavorite = await isRecipeFavorite(req.user._id, recipe._id);
-      const favoritesCount = await getFavoritesCount(recipe._id);
+    // if (req.user) {
 
-      return { ...recipe, isFavorite, favoritesCount };
+    // const favoritesChecks = enrichedRecipes.map(async (recipe) => {
+    //   const isFavorite = await isRecipeFavorite(req.user._id, recipe._id);
+    //   const favoritesCount = await getFavoritesCount(recipe._id);
+
+    //   return { ...recipe, isFavorite, favoritesCount };
+    // });
+
+    // const enrichedWithFavorites = await Promise.all(favoritesChecks);
+
+    //   return res.json({
+    //     status: 200,
+    //     message: 'Successfully found recipes!',
+    //     data: {
+    //       recipes: enrichedWithFavorites,
+    //       page,
+    //       perPage,
+    //       totalItems: total,
+    //       totalPages: Math.ceil(total / perPage),
+    //       hasPreviousPage: page > 1,
+    //       hasNextPage: page < Math.ceil(total / perPage),
+    //     },
+    //   });
+    // } else {
+    //   const recipesWithCount = await Promise.all(
+    //     enrichedRecipes.map(async (recipe) => {
+    //       const favoritesCount = await getFavoritesCount(recipe._id);
+    //       return { ...recipe, favoritesCount };
+    //     }),
+    //   );
+    //   // Якщо користувача немає — повертаємо без поля isFavorite
+    //   res.json({
+    //     status: 200,
+    //     message: 'Successfully found recipes!',
+    //     data: {
+    //       recipes: recipesWithCount,
+    //       page,
+    //       perPage,
+    //       totalItems: total,
+    //       totalPages: Math.ceil(total / perPage),
+    //       hasPreviousPage: page > 1,
+    //       hasNextPage: page < Math.ceil(total / perPage),
+    //     },
+    //   });
+  // }
+  if (req.user) {
+    const userFavoritesSet = new Set(
+      req.user.favorites.map((id) => id.toString()),
+    );
+
+    const enrichedWithFavorites = await Promise.all(
+      enrichedRecipes.map(async (recipe) => {
+        const favoritesCount = await getFavoritesCount(recipe._id);
+        const isFavorite = userFavoritesSet.has(recipe._id.toString());
+        return { ...recipe, isFavorite, favoritesCount };
+      }),
+    );
+
+    return res.json({
+      status: 200,
+      message: 'Successfully found recipes!',
+      data: {
+        recipes: enrichedWithFavorites,
+        page,
+        perPage,
+        totalItems: total,
+        totalPages: Math.ceil(total / perPage),
+        hasPreviousPage: page > 1,
+        hasNextPage: page < Math.ceil(total / perPage),
+      },
     });
+  } else {
+    const recipesWithCount = await Promise.all(
+      enrichedRecipes.map(async (recipe) => {
+        const favoritesCount = await getFavoritesCount(recipe._id);
+        return { ...recipe, favoritesCount };
+      }),
+    );
 
-    const enrichedWithFavorites = await Promise.all(favoritesChecks);
-
-      return res.json({
-        status: 200,
-        message: 'Successfully found recipes!',
-        data: {
-          recipes: enrichedWithFavorites,
-          page,
-          perPage,
-          totalItems: total,
-          totalPages: Math.ceil(total / perPage),
-          hasPreviousPage: page > 1,
-          hasNextPage: page < Math.ceil(total / perPage),
-        },
-      });
-    } else {
-      const recipesWithCount = await Promise.all(
-        enrichedRecipes.map(async (recipe) => {
-          const favoritesCount = await getFavoritesCount(recipe._id);
-          return { ...recipe, favoritesCount };
-        }),
-      );
-      // Якщо користувача немає — повертаємо без поля isFavorite
-      res.json({
-        status: 200,
-        message: 'Successfully found recipes!',
-        data: {
-          recipes: recipesWithCount,
-          page,
-          perPage,
-          totalItems: total,
-          totalPages: Math.ceil(total / perPage),
-          hasPreviousPage: page > 1,
-          hasNextPage: page < Math.ceil(total / perPage),
-        },
-      });
-    }
+    return res.json({
+      status: 200,
+      message: 'Successfully found recipes!',
+      data: {
+        recipes: recipesWithCount,
+        page,
+        perPage,
+        totalItems: total,
+        totalPages: Math.ceil(total / perPage),
+        hasPreviousPage: page > 1,
+        hasNextPage: page < Math.ceil(total / perPage),
+      },
+    });
+  }
 };
 
 // ================================FIND RECIPET BY ID=======================================
@@ -241,6 +286,8 @@ export const addToFavorites = async (req, res, next) => {
       await user.save();
     }
 
+    const favoritesCount = await getFavoritesCount(recipeId);
+
     const { page, perPage, skip, sortBy, sortOrder, filter } = parseQueryOptions(req.query);
 
     // Працюємо лише з рецептами, що в favorites
@@ -294,6 +341,7 @@ export const addToFavorites = async (req, res, next) => {
         totalPages,
         hasPreviousPage: page > 1,
         hasNextPage: page < totalPages,
+        favoritesCount,
       },
     });
   } catch (error) {
@@ -329,6 +377,8 @@ export const removeFavorite = async (req, res, next) => {
   );
 
   await user.save();
+
+  const favoritesCount = await getFavoritesCount(recipeId);
 
   // Отримуємо параметри пагінації та фільтрації з query
   const { page, perPage, skip, sortBy, sortOrder, filter } = parseQueryOptions(req.query);
@@ -384,7 +434,9 @@ export const removeFavorite = async (req, res, next) => {
         totalPages,
         hasPreviousPage: page > 1,
         hasNextPage: page < totalPages,
-}});
+        favoritesCount,
+      },
+    });
   };
 
 // ================================GET ALL FAVORITES RECIPES=========================================
