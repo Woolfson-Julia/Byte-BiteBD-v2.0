@@ -502,7 +502,14 @@ if (totalItems === 0) {
     // Після сортування застосовуємо пагінацію вручну
     const paginatedFavorites = sortedFavorites.slice(skip, skip + perPage);
 
-    const enrichedRecipes = await getEnrichedRecipes(paginatedFavorites);
+    const enrichedPartial = await getEnrichedRecipes(paginatedFavorites);
+
+    const enrichedRecipes = await Promise.all(
+      enrichedPartial.map(async (recipe) => {
+        const favoritesCount = await getFavoritesCount(recipe._id);
+        return { ...recipe, favoritesCount };
+      }),
+    );
 
     res.status(200).json({
       status: 200,
